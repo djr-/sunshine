@@ -84,8 +84,6 @@ public class ForecastFragment extends Fragment {
 
         List<String> weekForecast = new ArrayList<String>(Arrays.asList(forecastArray));
 
-        Log.d("WEEK_FORECAST", weekForecast.get(0));
-
         mForecastAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_forecast, R.id.list_item_forecast_textview, weekForecast);
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
@@ -130,8 +128,6 @@ public class ForecastFragment extends Fragment {
                         .appendQueryParameter(UNITS_PARAM, units)
                         .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
                         .build();
-
-                Log.v(LOG_TAG, builtURI.toString());
                 
                 // Construct the URL for the OpenWeatherMap query
                 // Possible parameters are available at OWM's forecast API page, at
@@ -173,8 +169,6 @@ public class ForecastFragment extends Fragment {
                     Log.e(LOG_TAG, e.getMessage(), e);
                     e.printStackTrace();
                 }
-
-                Log.v(LOG_TAG, forecastJsonStr);
 
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Error ", e);
@@ -289,9 +283,6 @@ public class ForecastFragment extends Fragment {
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
             }
 
-            for (String s : resultStrs) {
-                Log.v(LOG_TAG, "Forecast entry: " + s);
-            }
             return resultStrs;
 
         }
