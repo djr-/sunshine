@@ -1,9 +1,11 @@
 package com.example.sunshine;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -29,8 +31,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -51,6 +51,12 @@ public class ForecastFragment extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.forecastfragment, menu);
     }
@@ -63,8 +69,8 @@ public class ForecastFragment extends Fragment {
         int id = item.getItemId();
 
         if (id == R.id.action_refresh) {
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("94043");
+            updateWeather();
+
             return true;
         }
 
@@ -74,19 +80,11 @@ public class ForecastFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-        String[] forecastArray = {
-                "Today - Sunny - 88 / 63",
-                "Tomorrow - Sunny - 88 / 63",
-                "Weds - Sunny - 88 / 63",
-                "Thurs - Sunny - 88 / 63",
-                "Fri - Sunny - 88 / 63",
-                "Sat - Sunny - 88 / 63"
-        };
-
-        List<String> weekForecast = new ArrayList<String>(Arrays.asList(forecastArray));
-
-        mForecastAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_forecast, R.id.list_item_forecast_textview, weekForecast);
+        mForecastAdapter = new ArrayAdapter<String>(
+                getActivity(),
+                R.layout.list_item_forecast,
+                R.id.list_item_forecast_textview,
+                new ArrayList<String>());
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
@@ -106,6 +104,15 @@ public class ForecastFragment extends Fragment {
         });
 
         return rootView;
+    }
+
+    public void updateWeather()
+    {
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String userSpecifiedLocation = prefs.getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));
+        weatherTask.execute(userSpecifiedLocation);
     }
 
     public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
@@ -287,11 +294,18 @@ public class ForecastFragment extends Fragment {
                 JSONObject weatherObject = dayForecast.getJSONArray(OWM_WEATHER).getJSONObject(0);
                 description = weatherObject.getString(OWM_DESCRIPTION);
 
-                // Temperatures are in a child object called "temp".  Try not to name variables
-                // "temp" when working with temperature.  It confuses everybody.
                 JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
+
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                String userSpecifiedUnits = prefs.getString(getString(R.string.pref_units_key), getString(R.string.pref_units_metric));
+                if (userSpecifiedUnits != null && userSpecifiedUnits.equals(getString(R.string.pref_units_imperial))) {
+                    high = convertCelsiusToFahrenheit(high);
+                    low = convertCelsiusToFahrenheit(low);
+                }
+
+                Log.e("testing", userSpecifiedUnits);
 
                 highAndLow = formatHighLows(high, low);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
@@ -311,5 +325,9 @@ public class ForecastFragment extends Fragment {
                 }
             }
         }
+    }
+
+    private double convertCelsiusToFahrenheit(double temp) {
+        return ((temp * 9/5) + 32);
     }
 }
